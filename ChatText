@@ -1,0 +1,67 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using Photon.Pun;
+using TMPro;
+
+public class ChatText : MonoBehaviourPunCallbacks
+{
+    Rigidbody2D rb;
+    public PhotonView pV;
+    public TMP_InputField inputField;
+    public Vector3 pos;
+    public PlayerMovement playerMovement;
+    public GameObject textField, pArent,_Player;
+    public Camera cam;
+    public bool typing=false;
+    // Start is called before the first frame update
+    void Start()
+    {
+        
+        rb = GetComponent<Rigidbody2D>();
+        pArent = GameObject.Find("Panel");
+        playerMovement.userInput = true;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (pV.IsMine)
+        {
+            cam = Camera.main;
+            cam.GetComponent<Camera>();
+            if (Input.GetKeyDown(KeyCode.Return))
+            {
+                if (typing)
+                {
+                    inputField.gameObject.SetActive(true);
+                    inputField.text = string.Empty;
+                    inputField.ActivateInputField();
+                    playerMovement.userInput = false;
+                    typing = false;
+                    return;
+                }
+                if (typing == false)
+                {
+                    inputField.gameObject.SetActive(false);
+                    pos =new Vector3(_Player.transform.position.x, _Player.transform.position.y + Vector3.up.y, _Player.transform.position.z) ;
+                    playerMovement.userInput=true;
+                    pV.RPC("typeInChat", RpcTarget.All, inputField.text,pos);
+                    Debug.Log(pos);
+                    typing = true;
+                    return;
+                }
+            }
+        }
+    }
+    [PunRPC]
+    public void typeInChat(string text,Vector3 pOs, PhotonMessageInfo info)
+    {
+        GameObject textObj = Instantiate(textField, Camera.main.GetComponent<Camera>().WorldToScreenPoint(pOs),Quaternion.identity,GameObject.Find("Panel").transform);
+        TMP_Text tmpTextobj = textObj.GetComponent<TMP_Text>();
+        tmpTextobj.text = text;
+        followPlayer fP = textObj.AddComponent<followPlayer>();
+        fP.player = info.photonView.gameObject;
+        return;
+    }
+}
